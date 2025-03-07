@@ -1,10 +1,10 @@
 use proc_macro::TokenStream;
-use quote::quote;
-use syn::{parse_macro_input, ItemFn, AttributeArgs, NestedMeta, Lit, Meta, MetaNameValue};
 use proc_macro2::TokenStream as TokenStream2;
+use quote::quote;
+use syn::{parse_macro_input, AttributeArgs, ItemFn, Lit, Meta, MetaNameValue, NestedMeta};
 
 /// Timing instrumentation for functions
-/// 
+///
 /// Usage:
 /// - `#[timed_instrument]` - uses INFO level by default
 /// - `#[timed_instrument(level = "debug")]` - specify level (trace, debug, info, warn, error)
@@ -13,33 +13,31 @@ pub fn timed_instrument(attr: TokenStream, item: TokenStream) -> TokenStream {
     // Parse arguments to get log level
     let args = parse_macro_input!(attr as AttributeArgs);
     let level = parse_level_from_args(&args);
-    
+
     // Parse the function
     let input = parse_macro_input!(item as ItemFn);
     let fn_name = &input.sig.ident;
     let vis = &input.vis;
     let sig = &input.sig;
     let body = &input.block;
-    
+
     // Generate the instrumented function
     let output = quote! {
         #vis #sig {
             let span = tracing::span!(#level, stringify!(#fn_name));
             let _enter = span.enter();
-            
-            tracing::event!(#level, "{} started", stringify!(#fn_name));
-            
+
             let start_time = std::time::Instant::now();
-            
+
             let result = #body;
-            
+
             let duration = start_time.elapsed();
             tracing::event!(#level, "{} executed in {:?}", stringify!(#fn_name), duration);
-            
+
             result
         }
     };
-    
+
     output.into()
 }
 
