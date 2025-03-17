@@ -43,7 +43,7 @@ fn read_output_from_env() -> Output {
                 }
                 config
             }
-        },
+        }
         Err(_) => Output::Off, // Default to Off if env var isn't set
     }
 }
@@ -52,15 +52,15 @@ fn read_output_from_env() -> Output {
 fn init_csv_file(filename: &str) -> Result<(), IoError> {
     // Create or truncate the file
     let file = File::create(filename)?;
-    
+
     // Write the header using csv crate
     let mut wtr = csv::WriterBuilder::new().from_writer(file);
     wtr.write_record(&["function", "duration_ms"])
         .map_err(|e| IoError::new(std::io::ErrorKind::Other, e.to_string()))?;
-    
+
     wtr.flush()
         .map_err(|e| IoError::new(std::io::ErrorKind::Other, e.to_string()))?;
-    
+
     Ok(())
 }
 
@@ -71,7 +71,7 @@ fn init_csv_file(filename: &str) -> Result<(), IoError> {
 /// ```
 /// // Disable timing output
 /// timed_core::set_output(timed_core::Output::Off);
-/// 
+///
 /// // Use tracing for output
 /// timed_core::set_output(timed_core::Output::Tracing);
 ///
@@ -87,7 +87,7 @@ pub fn set_output(output: Output) {
     match OUTPUT_CONFIG.lock() {
         Ok(mut config) => {
             *config = output;
-        },
+        }
         Err(poisoned) => {
             // Recover from poisoned mutex during testing
             *poisoned.into_inner() = output;
@@ -99,7 +99,7 @@ pub fn set_output(output: Output) {
 pub fn get_output() -> Output {
     match OUTPUT_CONFIG.lock() {
         Ok(config) => config.clone(),
-        Err(poisoned) => poisoned.into_inner().clone() // Recover from poisoned mutex
+        Err(poisoned) => poisoned.into_inner().clone(), // Recover from poisoned mutex
     }
 }
 
@@ -109,7 +109,7 @@ pub fn refresh_from_env() {
     match OUTPUT_CONFIG.lock() {
         Ok(mut config) => {
             *config = output;
-        },
+        }
         Err(poisoned) => {
             // Recover from poisoned mutex during testing
             *poisoned.into_inner() = output;
@@ -121,13 +121,13 @@ pub fn refresh_from_env() {
 pub fn record_timing(function_name: &str, duration_ms: f64) {
     let config = match OUTPUT_CONFIG.lock() {
         Ok(guard) => guard.clone(),
-        Err(poisoned) => poisoned.into_inner().clone()
+        Err(poisoned) => poisoned.into_inner().clone(),
     };
 
     match &config {
         Output::Off => {
             // Do nothing when timing is disabled
-        },
+        }
         Output::Tracing => {
             // Use tracing for output
             tracing::event!(
@@ -139,16 +139,13 @@ pub fn record_timing(function_name: &str, duration_ms: f64) {
         }
         Output::CSV(filename) => {
             // Only try to create/append to CSV file if not Off
-            let file_result = OpenOptions::new()
-                .write(true)
-                .append(true)
-                .open(filename);
-            
+            let file_result = OpenOptions::new().write(true).append(true).open(filename);
+
             if let Ok(file) = file_result {
                 let mut wtr = csv::WriterBuilder::new()
-                    .has_headers(false)  // Don't write header again
+                    .has_headers(false) // Don't write header again
                     .from_writer(file);
-                
+
                 // Try to write, but don't crash if it fails
                 let _ = wtr.write_record(&[function_name, &format!("{:.3}", duration_ms)]);
                 let _ = wtr.flush();
