@@ -1,0 +1,19 @@
+[package]
+name = "timed"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+timed-core = { path = "../timed-core" }
+tracing = "0.1"
+
+# These should be normal dependencies (not dev-dependencies)
+syn = { version = "1.0", features = ["full"] }
+quote = "1.0"
+proc-macro2 = "1.0"
+once_cell = "1.8"
+csv = "1.1"
+serde = { version = "1.0", features = ["derive"] }
