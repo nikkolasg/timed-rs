@@ -82,8 +82,8 @@ mod tests {
         );
 
         // Read contents of the CSV file
-        let csv_content =
-            fs::read_to_string(filename).unwrap_or_else(|_| format!("Failed to read CSV file: {}", filename));
+        let csv_content = fs::read_to_string(filename)
+            .unwrap_or_else(|_| format!("Failed to read CSV file: {}", filename));
 
         // Log the content for debugging
         println!("CSV content: {}", csv_content);
