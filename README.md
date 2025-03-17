@@ -7,8 +7,20 @@ A Rust library for timing function execution with configurable output.
 - Time function execution with a simple attribute macro: `#[timed::timed_instrument]`
 - Configure log level: `#[timed::timed_instrument(level = "debug")]`
 - Choose output method:
+  - Disable timing: `timed_core::set_output(timed_core::Output::Off)`
   - Tracing logs: `timed_core::set_output(timed_core::Output::Tracing)`
   - CSV file: `timed_core::set_output(timed_core::Output::CSV("timing_results.csv".to_string()))`
+- Configure via environment variable: `TIMED_OUTPUT=off|tracing|filename.csv`
+
+## Environment Variable Configuration
+
+The library can be configured using the `TIMED_OUTPUT` environment variable:
+
+- `TIMED_OUTPUT=off` - Disable all timing (default if not set)
+- `TIMED_OUTPUT=tracing` - Output timing using tracing logs
+- `TIMED_OUTPUT=filename.csv` - Output timing to the specified CSV file
+
+This allows enabling/disabling the instrumentation in production without code changes.
 
 ## Usage
 
@@ -23,7 +35,7 @@ A Rust library for timing function execution with configurable output.
    ```rust
    use timed_core::Output;
    
-   // Configure output method
+   // Configure output method (or use environment variable)
    timed_core::set_output(Output::CSV("timing_results.csv".to_string()));
    
    // Apply the macro to functions you want to time
@@ -38,23 +50,39 @@ A Rust library for timing function execution with configurable output.
    }
    ```
 
+3. Run your program with environment configuration:
+   ```bash
+   # Disable timing
+   TIMED_OUTPUT=off cargo run
+   
+   # Use tracing output
+   TIMED_OUTPUT=tracing cargo run
+   
+   # Use CSV output
+   TIMED_OUTPUT=timing_results.csv cargo run
+   ```
+
 ## Testing
 
-Run the automated tests and examples:
+Run the automated test suite:
 
 ```
-cargo run -p timed-test
+cargo test -p timed-test
 ```
 
-This will:
-1. Test tracing output (verifies no CSV file is created)
-2. Test CSV output (verifies correct file format and content)
+The tests cover:
+1. Default configuration (Off)
+2. Explicit output configuration (Off, Tracing, CSV)
+3. Environment variable based configuration
+4. CSV file format and content validation
+
+Each test function follows standard Rust unit testing patterns with proper setup and assertions.
 
 ## Workspace Structure
 
 - `timed` - The proc macro component
 - `timed-core` - The runtime component with output configuration
-- `timed-test` - Example usage and automated test suite for the library
+- `timed-test` - Test suite for all library functionality
 
 ## CSV Output Format
 

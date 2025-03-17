@@ -7,4 +7,6 @@ edition = "2021"
 timed = { path = "../timed" }
 timed-core = { path = "../timed-core" }
 tracing = "0.1"
-tracing-subscriber = "0.3" 
+tracing-subscriber = "0.3"
+csv = "1.1"
+serial_test = "2.0" 
