@@ -1,13 +1,12 @@
 use proc_macro::TokenStream;
-use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
 use syn::{parse_macro_input, AttributeArgs, ItemFn, Lit, Meta, MetaNameValue, NestedMeta};
 
 /// Timing instrumentation for functions
 ///
 /// Usage:
-/// - `#[timed_instrument]` - uses INFO level by default
-/// - `#[timed_instrument(level = "debug")]` - specify level (trace, debug, info, warn, error)
+/// - `#[timed::timed_instrument]` - uses INFO level by default
+/// - `#[timed::timed_instrument(level = "debug")]` - specify level (trace, debug, info, warn, error)
 #[proc_macro_attribute]
 pub fn timed_instrument(attr: TokenStream, item: TokenStream) -> TokenStream {
     // Parse arguments to get log level
@@ -32,7 +31,8 @@ pub fn timed_instrument(attr: TokenStream, item: TokenStream) -> TokenStream {
             let result = #body;
 
             let duration = start_time.elapsed();
-            tracing::event!(#level, "{} executed in {:?}", stringify!(#fn_name), duration);
+            // Record timing, will use current output configuration
+            timed_core::record_timing(stringify!(#fn_name), duration.as_secs_f64() * 1000.0);
 
             result
         }
