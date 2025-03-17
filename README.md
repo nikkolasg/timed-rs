@@ -38,8 +38,27 @@ A Rust library for timing function execution with configurable output.
    }
    ```
 
+## Testing
+
+Run the automated tests and examples:
+
+```
+cargo run -p timed-test
+```
+
+This will:
+1. Test tracing output (verifies no CSV file is created)
+2. Test CSV output (verifies correct file format and content)
+
 ## Workspace Structure
 
 - `timed` - The proc macro component
 - `timed-core` - The runtime component with output configuration
-- `timed-test` - Example and testing code for the library
+- `timed-test` - Example usage and automated test suite for the library
+
+## CSV Output Format
+
+When using CSV output, the library creates a file with:
+- Header row: `function,duration_ms`
+- One row per function call with the function name and execution time in milliseconds
+- The file is created fresh when `set_output()` is called and appended to on each function call
