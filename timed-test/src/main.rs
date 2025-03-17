@@ -63,7 +63,7 @@ mod tests {
     fn cleanup_csv_file(filename: &str) {
         if Path::new(filename).exists() {
             fs::remove_file(filename)
-                .expect(&format!("Failed to remove existing CSV file: {}", filename));
+                .unwrap_or_else(|_| panic!("Failed to remove existing CSV file: {}", filename));
         }
         assert!(
             !Path::new(filename).exists(),
@@ -83,7 +83,7 @@ mod tests {
 
         // Read contents of the CSV file
         let csv_content =
-            fs::read_to_string(filename).expect(&format!("Failed to read CSV file: {}", filename));
+            fs::read_to_string(filename).unwrap_or_else(|_| format!("Failed to read CSV file: {}", filename));
 
         // Log the content for debugging
         println!("CSV content: {}", csv_content);
