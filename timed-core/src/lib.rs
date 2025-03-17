@@ -27,7 +27,7 @@ static DEFAULT_CONFIG: Lazy<Output> = Lazy::new(|| {
 
 // Thread-local storage for testing and configuration overrides
 thread_local! {
-    static THREAD_CONFIG: RefCell<Option<Output>> = RefCell::new(None);
+    static THREAD_CONFIG: RefCell<Option<Output>> = const { RefCell::new(None) };
 }
 
 // Helper to read output configuration from environment
@@ -105,7 +105,7 @@ pub fn set_output(output: Output) {
 pub fn get_output() -> Output {
     // First check for a thread-local override
     let thread_override = THREAD_CONFIG.with(|cell| cell.borrow().clone());
-    
+
     // If override exists, use it, otherwise use default
     thread_override.unwrap_or_else(|| DEFAULT_CONFIG.clone())
 }
@@ -124,7 +124,7 @@ pub fn refresh_from_env() {
 /// Record timing data
 pub fn record_timing(function_name: &str, duration_ms: f64) {
     let config = get_output();
-    
+
     match &config {
         Output::Off => {
             // Do nothing when timing is disabled

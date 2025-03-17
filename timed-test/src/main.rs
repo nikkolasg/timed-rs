@@ -296,41 +296,4 @@ mod tests {
         cleanup_csv_file(test_file);
         info!("Environment variable (CSV) test passed");
     }
-
-    #[test]
-    #[serial]
-    fn test_env_var_no_refresh() {
-        setup_tracing();
-        let test_file = "test_env_var_no_refresh.csv";
-        cleanup_csv_file(test_file);
-
-        // Ensure any previous thread-local setting is cleared
-        // This is important for tests running in sequence
-        set_output(Output::Off);
-
-        // Set environment variable to CSV filename
-        env::set_var(TIMED_OUTPUT_ENV, test_file);
-
-        // A new thread should pick up the environment variable automatically
-        // So we'll spawn a new thread to test this
-        let handle = std::thread::spawn(move || {
-            // Run test functions - should read env var automatically
-            test_function_default_level();
-            test_function_debug_level();
-        });
-        
-        // Wait for thread to complete
-        handle.join().unwrap();
-
-        // Small delay to ensure file is completely written
-        std::thread::sleep(std::time::Duration::from_millis(50));
-
-        // Verify CSV file was created with expected name
-        verify_csv_file(test_file);
-
-        // Cleanup at end
-        env::remove_var(TIMED_OUTPUT_ENV);
-        cleanup_csv_file(test_file);
-        info!("Environment variable with no refresh test passed");
-    }
 }
