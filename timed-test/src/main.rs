@@ -1,101 +1,3 @@
-use serial_test::serial;
-/// This file serves both as an example of how to use the timed crates and
-/// as an automated test that can run in CI to verify the library works correctly.
-///
-/// It demonstrates three main features:
-/// 1. Using the timed attribute macro to instrument functions
-/// 2. Configuring different output methods (Off, Tracing, CSV file)
-/// 3. Using environment variables to control output behavior
-///
-/// The test also verifies that:
-/// - When output is Off, no logging or file creation occurs
-/// - When using Tracing output, no CSV file is created
-/// - When using CSV output, a properly formatted file is created with expected contents
-/// - Environment variable configuration works as expected
-use std::env;
-use std::fs;
-use std::path::Path;
-use std::sync::Once;
-use std::thread;
-use std::time::Duration;
-use timed_core::{get_output, refresh_from_env, set_output, Output, TIMED_OUTPUT_ENV};
-use tracing::{info, Level};
-use tracing_subscriber::FmtSubscriber;
-
-// Initialize tracing exactly once for all tests
-static TRACING_INIT: Once = Once::new();
-
-fn setup_tracing() {
-    TRACING_INIT.call_once(|| {
-        let subscriber = FmtSubscriber::builder()
-            .with_max_level(Level::TRACE)
-            .finish();
-        tracing::subscriber::set_global_default(subscriber)
-            .expect("Failed to set tracing subscriber");
-    });
-}
-
-// Apply the timing instrumentation to our test functions - make them pub(crate) so they're accessible in tests
-#[timed::timed_instrument]
-pub(crate) fn test_function_default_level() {
-    println!("test_function_default_level");
-    // Simulate some work with deterministic duration for testing
-    thread::sleep(Duration::from_millis(100));
-}
-
-#[timed::timed_instrument(level = "debug")]
-pub(crate) fn test_function_debug_level() {
-    println!("test_function_debug_level");
-    // Simulate some work with deterministic duration for testing
-    thread::sleep(Duration::from_millis(50));
-}
-
-// Helper function to clean up a CSV file
-fn cleanup_csv_file(filename: &str) {
-    if Path::new(filename).exists() {
-        fs::remove_file(filename)
-            .expect(&format!("Failed to remove existing CSV file: {}", filename));
-    }
-    assert!(
-        !Path::new(filename).exists(),
-        "CSV file still exists after cleanup: {}",
-        filename
-    );
-}
-
-/// Verify CSV file contents
-fn verify_csv_file(filename: &str) {
-    // Verify CSV file was created
-    assert!(
-        Path::new(filename).exists(),
-        "CSV file wasn't created when using CSV output: {}",
-        filename
-    );
-
-    // Read contents of the CSV file
-    let csv_content =
-        fs::read_to_string(filename).expect(&format!("Failed to read CSV file: {}", filename));
-
-    // Log the content for debugging
-    println!("CSV content: {}", csv_content);
-
-    // Verify CSV file has the header
-    assert!(
-        csv_content.contains("function") && csv_content.contains("duration_ms"),
-        "CSV header doesn't contain expected columns: {}",
-        filename
-    );
-
-    // Verify function names are in the CSV
-    assert!(
-        csv_content.contains("test_function_default_level")
-            || csv_content.contains("test_function_debug_level"),
-        "CSV {} doesn't contain any function names: {}",
-        filename,
-        csv_content
-    );
-}
-
 /// Empty main function - actual tests run through cargo test
 fn main() {
     // This crate can still be run manually with cargo run if desired
@@ -104,7 +6,104 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use serial_test::serial;
+
+    /// This file serves both as an example of how to use the timed crates and
+    /// as an automated test that can run in CI to verify the library works correctly.
+    ///
+    /// It demonstrates three main features:
+    /// 1. Using the timed attribute macro to instrument functions
+    /// 2. Configuring different output methods (Off, Tracing, CSV file)
+    /// 3. Using environment variables to control output behavior
+    ///
+    /// The test also verifies that:
+    /// - When output is Off, no logging or file creation occurs
+    /// - When using Tracing output, no CSV file is created
+    /// - When using CSV output, a properly formatted file is created with expected contents
+    /// - Environment variable configuration works as expected
+    use std::env;
+    use std::fs;
+    use std::path::Path;
+    use std::sync::Once;
+    use std::thread;
+    use std::time::Duration;
+    use timed_core::{get_output, refresh_from_env, set_output, Output, TIMED_OUTPUT_ENV};
+    use tracing::{info, Level};
+    use tracing_subscriber::FmtSubscriber;
+
+    // Initialize tracing exactly once for all tests
+    static TRACING_INIT: Once = Once::new();
+
+    fn setup_tracing() {
+        TRACING_INIT.call_once(|| {
+            let subscriber = FmtSubscriber::builder()
+                .with_max_level(Level::TRACE)
+                .finish();
+            tracing::subscriber::set_global_default(subscriber)
+                .expect("Failed to set tracing subscriber");
+        });
+    }
+
+    // Apply the timing instrumentation to our test functions
+    #[timed::timed_instrument]
+    fn test_function_default_level() {
+        println!("test_function_default_level");
+        // Simulate some work with deterministic duration for testing
+        thread::sleep(Duration::from_millis(100));
+    }
+
+    #[timed::timed_instrument(level = "debug")]
+    fn test_function_debug_level() {
+        println!("test_function_default_level");
+        // Simulate some work with deterministic duration for testing
+        thread::sleep(Duration::from_millis(50));
+    }
+
+    // Helper function to clean up a CSV file
+    fn cleanup_csv_file(filename: &str) {
+        if Path::new(filename).exists() {
+            fs::remove_file(filename)
+                .expect(&format!("Failed to remove existing CSV file: {}", filename));
+        }
+        assert!(
+            !Path::new(filename).exists(),
+            "CSV file still exists after cleanup: {}",
+            filename
+        );
+    }
+
+    /// Verify CSV file contents
+    fn verify_csv_file(filename: &str) {
+        // Verify CSV file was created
+        assert!(
+            Path::new(filename).exists(),
+            "CSV file wasn't created when using CSV output: {}",
+            filename
+        );
+
+        // Read contents of the CSV file
+        let csv_content =
+            fs::read_to_string(filename).expect(&format!("Failed to read CSV file: {}", filename));
+
+        // Log the content for debugging
+        println!("CSV content: {}", csv_content);
+
+        // Verify CSV file has the header
+        assert!(
+            csv_content.contains("function") && csv_content.contains("duration_ms"),
+            "CSV header doesn't contain expected columns: {}",
+            filename
+        );
+
+        // Verify function names are in the CSV
+        assert!(
+            csv_content.contains("test_function_default_level")
+                || csv_content.contains("test_function_debug_level"),
+            "CSV {} doesn't contain any function names: {}",
+            filename,
+            csv_content
+        );
+    }
 
     #[test]
     #[serial]

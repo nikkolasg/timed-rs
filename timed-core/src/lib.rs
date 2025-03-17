@@ -55,7 +55,7 @@ fn init_csv_file(filename: &str) -> Result<(), IoError> {
 
     // Write the header using csv crate
     let mut wtr = csv::WriterBuilder::new().from_writer(file);
-    wtr.write_record(&["function", "duration_ms"])
+    wtr.write_record(["function", "duration_ms"])
         .map_err(|e| IoError::new(std::io::ErrorKind::Other, e.to_string()))?;
 
     wtr.flush()
@@ -139,7 +139,7 @@ pub fn record_timing(function_name: &str, duration_ms: f64) {
         }
         Output::CSV(filename) => {
             // Only try to create/append to CSV file if not Off
-            let file_result = OpenOptions::new().write(true).append(true).open(filename);
+            let file_result = OpenOptions::new().append(true).open(filename);
 
             if let Ok(file) = file_result {
                 let mut wtr = csv::WriterBuilder::new()
@@ -147,7 +147,7 @@ pub fn record_timing(function_name: &str, duration_ms: f64) {
                     .from_writer(file);
 
                 // Try to write, but don't crash if it fails
-                let _ = wtr.write_record(&[function_name, &format!("{:.3}", duration_ms)]);
+                let _ = wtr.write_record([function_name, &format!("{:.3}", duration_ms)]);
                 let _ = wtr.flush();
             }
         }
