@@ -1,8 +1,8 @@
 use once_cell::sync::Lazy;
+use std::cell::RefCell;
 use std::env;
 use std::fs::{File, OpenOptions};
 use std::io::Error as IoError;
-use std::sync::Mutex;
 
 /// Output configuration for timing data
 #[derive(Clone, Debug, PartialEq)]
@@ -18,12 +18,17 @@ pub enum Output {
 // Environment variable name for controlling output
 pub const TIMED_OUTPUT_ENV: &str = "TIMED_OUTPUT";
 
-// Initialize output configuration from environment variable
-// Defaults to Off if not specified
-static OUTPUT_CONFIG: Lazy<Mutex<Output>> = Lazy::new(|| {
-    // Use explicit Off value as default
-    Mutex::new(Output::Off)
+// Initialize default configuration from environment variable
+// This is used when there is no thread-local override
+static DEFAULT_CONFIG: Lazy<Output> = Lazy::new(|| {
+    // Read from environment variable during initialization
+    read_output_from_env()
 });
+
+// Thread-local storage for testing and configuration overrides
+thread_local! {
+    static THREAD_CONFIG: RefCell<Option<Output>> = RefCell::new(None);
+}
 
 // Helper to read output configuration from environment
 fn read_output_from_env() -> Output {
@@ -66,6 +71,9 @@ fn init_csv_file(filename: &str) -> Result<(), IoError> {
 
 /// Set the output method for timing data
 ///
+/// This is primarily intended for testing. In normal application use,
+/// it's recommended to use the environment variable for configuration.
+///
 /// # Examples
 ///
 /// ```
@@ -84,46 +92,39 @@ pub fn set_output(output: Output) {
         let _ = init_csv_file(filename);
     }
 
-    match OUTPUT_CONFIG.lock() {
-        Ok(mut config) => {
-            *config = output;
-        }
-        Err(poisoned) => {
-            // Recover from poisoned mutex during testing
-            *poisoned.into_inner() = output;
-        }
-    }
+    // Store in thread-local storage for this thread only
+    THREAD_CONFIG.with(|cell| {
+        *cell.borrow_mut() = Some(output);
+    });
 }
 
 /// Get the current output configuration
+///
+/// Returns the thread-local override configuration if set,
+/// otherwise returns the default configuration from environment.
 pub fn get_output() -> Output {
-    match OUTPUT_CONFIG.lock() {
-        Ok(config) => config.clone(),
-        Err(poisoned) => poisoned.into_inner().clone(), // Recover from poisoned mutex
-    }
+    // First check for a thread-local override
+    let thread_override = THREAD_CONFIG.with(|cell| cell.borrow().clone());
+    
+    // If override exists, use it, otherwise use default
+    thread_override.unwrap_or_else(|| DEFAULT_CONFIG.clone())
 }
 
-/// Force re-read of the environment variable (useful for testing)
+/// Force re-read of the environment variable
+///
+/// Useful for tests that need to change the environment variable
+/// and have it take effect for the current thread.
 pub fn refresh_from_env() {
     let output = read_output_from_env();
-    match OUTPUT_CONFIG.lock() {
-        Ok(mut config) => {
-            *config = output;
-        }
-        Err(poisoned) => {
-            // Recover from poisoned mutex during testing
-            *poisoned.into_inner() = output;
-        }
-    }
+    THREAD_CONFIG.with(|cell| {
+        *cell.borrow_mut() = Some(output);
+    });
 }
 
 /// Record timing data
 pub fn record_timing(function_name: &str, duration_ms: f64) {
-    let config = match OUTPUT_CONFIG.lock() {
-        Ok(guard) => guard.clone(),
-        Err(poisoned) => poisoned.into_inner().clone(),
-    };
-
+    let config = get_output();
+    
     match &config {
         Output::Off => {
             // Do nothing when timing is disabled
