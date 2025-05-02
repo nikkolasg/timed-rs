@@ -59,6 +59,12 @@ mod tests {
         thread::sleep(Duration::from_millis(50));
     }
 
+    #[timed::timed_instrument(name = "custom_name_for_function")]
+    fn test_function_custom_name() {
+        println!("test_function_custom_name");
+        thread::sleep(Duration::from_millis(75));
+    }
+
     // Helper function to clean up a CSV file
     fn cleanup_csv_file(filename: &str) {
         if Path::new(filename).exists() {
@@ -98,8 +104,41 @@ mod tests {
         // Verify function names are in the CSV
         assert!(
             csv_content.contains("test_function_default_level")
-                || csv_content.contains("test_function_debug_level"),
+                || csv_content.contains("test_function_debug_level")
+                || csv_content.contains("custom_name_for_function"),
             "CSV {} doesn't contain any function names: {}",
+            filename,
+            csv_content
+        );
+    }
+
+    /// Verify CSV file contents for custom name test
+    fn verify_csv_file_custom_name(filename: &str) {
+        // Verify CSV file was created
+        assert!(
+            Path::new(filename).exists(),
+            "CSV file wasn't created when using CSV output: {}",
+            filename
+        );
+
+        // Read contents of the CSV file
+        let csv_content = fs::read_to_string(filename)
+            .unwrap_or_else(|_| format!("Failed to read CSV file: {}", filename));
+
+        // Log the content for debugging
+        println!("CSV content for custom name: {}", csv_content);
+
+        // Verify CSV file has the header
+        assert!(
+            csv_content.contains("function") && csv_content.contains("duration_ms"),
+            "CSV header doesn't contain expected columns: {}",
+            filename
+        );
+
+        // Verify custom function name is in the CSV
+        assert!(
+            csv_content.contains("custom_name_for_function"),
+            "CSV {} doesn't contain the custom function name: {}",
             filename,
             csv_content
         );
@@ -295,5 +334,29 @@ mod tests {
         env::remove_var(TIMED_OUTPUT_ENV);
         cleanup_csv_file(test_file);
         info!("Environment variable (CSV) test passed");
+    }
+
+    #[test]
+    #[serial]
+    fn test_custom_name_csv() {
+        setup_tracing();
+        let test_file = "test_custom_name.csv";
+        cleanup_csv_file(test_file);
+
+        // Switch to CSV output
+        set_output(Output::CSV(test_file.to_string()));
+
+        // Run test function with custom name
+        test_function_custom_name();
+
+        // Small delay to ensure file is completely written
+        std::thread::sleep(std::time::Duration::from_millis(50));
+
+        // Verify CSV file contents for the custom name
+        verify_csv_file_custom_name(test_file);
+
+        // Cleanup at end
+        cleanup_csv_file(test_file);
+        info!("Custom name CSV test passed");
     }
 }

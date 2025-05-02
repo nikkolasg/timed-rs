@@ -6,11 +6,12 @@ A Rust library for timing function execution with configurable output. Measure a
 
 - **Simple API**: Time function execution with a single attribute macro: `#[timed::timed_instrument]`
 - **Configurable Log Levels**: Control verbosity with `#[timed::timed_instrument(level = "debug")]`
+- **Custom Naming**: Provide a custom name for output: `#[timed::timed_instrument(name = "my_operation")]`
 - **Multiple Output Methods**:
   - Disable timing: `set_output(Output::Off)`
   - Tracing logs: `set_output(Output::Tracing)`
   - CSV file export: `set_output(Output::CSV("timing_results.csv".to_string()))`
-- **Runtime Configuration**: Change output method dynamically without recompiling
+- **Runtime Configuration**: Change output method dynamically without recompiling (useful for tests)
 - **Environment Variable Control**: Configure via `TIMED_OUTPUT=off|tracing|filename.csv`
 - **Thread-Safe**: Safe to use in multi-threaded applications
 
@@ -70,7 +71,7 @@ set_output(Output::CSV("function_timing.csv".to_string()));
 ### Using the Macro
 
 ```rust
-// Default timing (INFO level)
+// Default timing (INFO level, uses function name)
 #[timed::timed_instrument]
 fn regular_function() {
     // Function code
@@ -79,6 +80,18 @@ fn regular_function() {
 // Custom log level
 #[timed::timed_instrument(level = "debug")]
 fn debug_level_function() {
+    // Function code
+}
+
+// Custom name for output
+#[timed::timed_instrument(name = "important_calculation")]
+fn some_complex_task() {
+    // Function code
+}
+
+// Custom name and level
+#[timed::timed_instrument(level = "trace", name = "low_level_io")]
+fn read_from_socket() {
     // Function code
 }
 
@@ -91,7 +104,7 @@ async fn async_function() -> Result<(), Box<dyn std::error::Error>> {
 
 // Works with methods too
 impl MyStruct {
-    #[timed::timed_instrument]
+    #[timed::timed_instrument(name = "my_struct_method")]
     fn my_method(&self) {
         // Method code
     }
