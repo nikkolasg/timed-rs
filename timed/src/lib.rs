@@ -68,9 +68,9 @@ fn parse_args(args: &[NestedMeta]) -> (proc_macro2::TokenStream, Option<String>)
                     };
                 }
             } else if path.is_ident("name") {
-                 if let Lit::Str(lit_str) = lit {
+                if let Lit::Str(lit_str) = lit {
                     custom_name = Some(lit_str.value());
-                 }
+                }
             }
         }
     }
