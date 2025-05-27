@@ -11,7 +11,7 @@ pub enum Output {
     Off,
     /// Use tracing for output
     Tracing,
-    /// Write to CSV file, with filename
+    /// Write to CSV file, with filename. File is truncated.
     CSV(String),
 }
 
